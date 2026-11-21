@@ -9,64 +9,28 @@
     { id: 'plum', name: 'Heather', hex: '#9B8EC7' },
   ];
 
-  const CATEGORIES = [
-    {
-      key: 'terrace',
-      label: 'Terrace Cards',
-      hint: 'Feature matching & simple ends (+2)',
-      iconClass: 'cat-terrace',
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9 20v-6h6v6"/></svg>`,
-    },
-    {
-      key: 'pier',
-      label: 'Pier Cards',
-      hint: 'Pier scoring & simple pier ends',
-      iconClass: 'cat-pier',
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18c2.5 1.5 5 1.5 7.5 0s5-1.5 7.5 0 3.5 1.2 5 .5"/><path d="M4 12h16"/><path d="M7 12v5"/><path d="M12 12v5"/><path d="M17 12v5"/><path d="M4 9l3-3 3 3"/></svg>`,
-    },
-    {
-      key: 'landmark',
-      label: 'Landmark Cards',
-      hint: 'One landmark max per street',
-      iconClass: 'cat-landmark',
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M9 21l1-12h4l1 12"/><path d="M9 9h6"/><path d="M10 9V6a2 2 0 1 1 4 0v3"/><path d="M4 6l2 1"/><path d="M20 6l-2 1"/></svg>`,
-    },
-    {
-      key: 'resident',
-      label: 'Resident Cards',
-      hint: 'Higher tier if street has sea at both ends',
-      iconClass: 'cat-resident',
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>`,
-    },
-    {
-      key: 'distinction',
-      label: 'Distinctions',
-      hint: 'Shared accolades (ties split, rounded down)',
-      iconClass: 'cat-distinction',
-      optional: true,
-      svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg>`,
-    },
-  ];
+  const ICONS = {
+    street: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9 20v-6h6v6"/></svg>`,
+    resident: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>`,
+    distinction: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/></svg>`,
+  };
+
+  function createDefaultStreets() {
+    return [
+      { score: 0, step: 1 },
+      { score: 0, step: 1 },
+      { score: 0, step: 1 },
+    ];
+  }
 
   function createPlayer(index) {
     return {
       id: `p${index + 1}`,
       name: `Player ${index + 1}`,
       colorIndex: index % PAWN_COLORS.length,
-      scores: {
-        terrace: 0,
-        pier: 0,
-        landmark: 0,
-        resident: 0,
-        distinction: 0,
-      },
-      stepSizes: {
-        terrace: 1,
-        pier: 1,
-        landmark: 1,
-        resident: 1,
-        distinction: 1,
-      },
+      streets: createDefaultStreets(),
+      resident: { score: 0, step: 1 },
+      distinction: { score: 0, step: 1 },
       completedStreets: 0,
     };
   }
@@ -90,15 +54,26 @@
     return state.players.slice(0, state.playerCount);
   }
 
+  function getStreetsTotal(player) {
+    return player.streets.reduce((sum, st) => sum + (Number(st.score) || 0), 0);
+  }
+
   function getPlayerTotal(player) {
-    const s = player.scores;
     return (
-      (Number(s.terrace) || 0) +
-      (Number(s.pier) || 0) +
-      (Number(s.landmark) || 0) +
-      (Number(s.resident) || 0) +
-      (state.includeDistinctions ? Number(s.distinction) || 0 : 0)
+      getStreetsTotal(player) +
+      (Number(player.resident.score) || 0) +
+      (state.includeDistinctions ? Number(player.distinction.score) || 0 : 0)
     );
+  }
+
+  function getRowEntry(player, rowKey) {
+    if (rowKey.startsWith('street-')) {
+      const idx = parseInt(rowKey.slice(7), 10);
+      return player.streets[idx] || null;
+    }
+    if (rowKey === 'resident') return player.resident;
+    if (rowKey === 'distinction') return player.distinction;
+    return null;
   }
 
   function escapeHtml(str) {
@@ -114,18 +89,19 @@
       player: p,
       originalIndex: idx,
       total: getPlayerTotal(p),
-      streets: Number(p.completedStreets) || 0,
-      resident: Number(p.scores.resident) || 0,
+      streetsScore: getStreetsTotal(p),
+      completedStreets: Number(p.completedStreets) || 0,
+      resident: Number(p.resident.score) || 0,
+      distinction: Number(p.distinction.score) || 0,
     }));
 
     active.sort((a, b) => {
       if (b.total !== a.total) return b.total - a.total;
-      if (b.streets !== a.streets) return b.streets - a.streets;
+      if (b.completedStreets !== a.completedStreets) return b.completedStreets - a.completedStreets;
       if (b.resident !== a.resident) return b.resident - a.resident;
       return a.originalIndex - b.originalIndex;
     });
 
-    // Assign competition ranks (1, 1, 3...) when all tiebreakers match
     let currentRank = 1;
     for (let i = 0; i < active.length; i++) {
       if (i > 0) {
@@ -133,7 +109,7 @@
         const curr = active[i];
         const exactTie =
           prev.total === curr.total &&
-          prev.streets === curr.streets &&
+          prev.completedStreets === curr.completedStreets &&
           prev.resident === curr.resident;
         if (!exactTie) {
           currentRank = i + 1;
@@ -185,6 +161,61 @@
       .join('');
   }
 
+  function renderScoreRow({ player, rowKey, label, hint, iconClass, svg, entry, removeIndex }) {
+    const stepVal = entry.step || 1;
+    const pct = (stepVal - 1) / 9;
+    const removeBtn =
+      removeIndex !== undefined
+        ? `<button type="button" class="remove-street-btn" data-remove-street="${removeIndex}" data-player-id="${player.id}" title="Remove ${label}" aria-label="Remove ${label}">&times;</button>`
+        : '';
+
+    return `
+      <div class="score-row">
+        <div class="score-row-top">
+          <div class="category-info">
+            <div class="category-icon ${iconClass}" aria-hidden="true">${svg}</div>
+            <div class="category-text">
+              <span class="category-name">${label}${removeBtn}</span>
+              <span class="category-hint">${hint}</span>
+            </div>
+          </div>
+          <div class="score-input-wrap">
+            <input
+              type="number"
+              inputmode="numeric"
+              class="score-input"
+              data-player-id="${player.id}"
+              data-row-key="${rowKey}"
+              value="${entry.score}"
+              aria-label="${escapeHtml(player.name)} ${label}"
+            />
+          </div>
+        </div>
+        <div class="delta-adder">
+          <button type="button" class="delta-btn delta-minus" data-delta-dir="-1" data-player-id="${player.id}" data-row-key="${rowKey}" aria-label="Subtract from ${label}">&minus;</button>
+          <div class="delta-slider-wrap" style="--pct: ${pct}">
+            <input
+              type="range"
+              min="1"
+              max="10"
+              step="1"
+              class="delta-range"
+              data-delta-range="${player.id}"
+              data-row-key="${rowKey}"
+              value="${stepVal}"
+              aria-label="Points per tap for ${escapeHtml(player.name)} ${label}"
+            />
+            <div class="delta-track" aria-hidden="true">
+              <div class="delta-fill"></div>
+              <span class="delta-thumb">${stepVal}</span>
+            </div>
+          </div>
+          <button type="button" class="delta-btn delta-plus" data-delta-dir="1" data-player-id="${player.id}" data-row-key="${rowKey}" aria-label="Add to ${label}">+</button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderPlayerCards() {
     const active = getActivePlayers();
     const ranked = getRankedPlayers();
@@ -204,62 +235,48 @@
         const isHiddenMobile = state.playerCount > 1 && idx !== state.activeMobileIndex;
         const isWinner = winnerIds.has(player.id);
 
-        const visibleCategories = CATEGORIES.filter(
-          (c) => !c.optional || state.includeDistinctions
-        );
-
-        const rowsHtml = visibleCategories
-          .map((cat) => {
-            const val = player.scores[cat.key];
-            const stepVal = player.stepSizes[cat.key] || 1;
-            const pct = (stepVal - 1) / 9;
-            return `
-              <div class="score-row">
-                <div class="score-row-top">
-                  <div class="category-info">
-                    <div class="category-icon ${cat.iconClass}" aria-hidden="true">${cat.svg}</div>
-                    <div class="category-text">
-                      <span class="category-name">${cat.label}</span>
-                      <span class="category-hint">${cat.hint}</span>
-                    </div>
-                  </div>
-                  <div class="score-input-wrap">
-                    <input
-                      type="number"
-                      inputmode="numeric"
-                      class="score-input"
-                      data-player-id="${player.id}"
-                      data-category="${cat.key}"
-                      value="${val}"
-                      aria-label="${escapeHtml(player.name)} ${cat.label}"
-                    />
-                  </div>
-                </div>
-                <div class="delta-adder">
-                  <button type="button" class="delta-btn delta-minus" data-delta-dir="-1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Subtract from ${cat.label}">&minus;</button>
-                  <div class="delta-slider-wrap" style="--pct: ${pct}">
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      step="1"
-                      class="delta-range"
-                      data-delta-range="${player.id}"
-                      data-category="${cat.key}"
-                      value="${stepVal}"
-                      aria-label="Points per tap for ${escapeHtml(player.name)} ${cat.label}"
-                    />
-                    <div class="delta-track" aria-hidden="true">
-                      <div class="delta-fill"></div>
-                      <span class="delta-thumb">${stepVal}</span>
-                    </div>
-                  </div>
-                  <button type="button" class="delta-btn delta-plus" data-delta-dir="1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Add to ${cat.label}">+</button>
-                </div>
-              </div>
-            `;
-          })
+        const streetRowsHtml = player.streets
+          .map((streetEntry, sIdx) =>
+            renderScoreRow({
+              player,
+              rowKey: `street-${sIdx}`,
+              label: `Street ${sIdx + 1}`,
+              hint: 'Terraces, piers & landmark in this street',
+              iconClass: 'cat-terrace',
+              svg: ICONS.street,
+              entry: streetEntry,
+              removeIndex: sIdx >= 3 ? sIdx : undefined,
+            })
+          )
           .join('');
+
+        const addStreetHtml = `
+          <button type="button" class="add-street-btn" data-add-street="${player.id}">
+            + Add Street
+          </button>
+        `;
+
+        const residentRowHtml = renderScoreRow({
+          player,
+          rowKey: 'resident',
+          label: 'Resident Cards',
+          hint: 'Higher tier if street has sea at both ends',
+          iconClass: 'cat-resident',
+          svg: ICONS.resident,
+          entry: player.resident,
+        });
+
+        const distinctionRowHtml = state.includeDistinctions
+          ? renderScoreRow({
+              player,
+              rowKey: 'distinction',
+              label: 'Distinctions',
+              hint: 'Shared accolades (ties split, rounded down)',
+              iconClass: 'cat-distinction',
+              svg: ICONS.distinction,
+              entry: player.distinction,
+            })
+          : '';
 
         return `
           <article
@@ -293,7 +310,10 @@
             </header>
 
             <div class="score-rows">
-              ${rowsHtml}
+              ${streetRowsHtml}
+              ${addStreetHtml}
+              ${residentRowHtml}
+              ${distinctionRowHtml}
 
               ${
                 state.playerCount > 1
@@ -336,7 +356,7 @@
     if (state.playerCount === 1) {
       const solo = state.players[0];
       const total = getPlayerTotal(solo);
-      const s = solo.scores;
+      const streetsScore = getStreetsTotal(solo);
       standingsEl.innerHTML = `
         <div class="standings-header">
           <h2>Solo Summary</h2>
@@ -352,11 +372,9 @@
             <div class="solo-hero-value">${total} <span style="font-size: 0.95rem; font-weight: 500; color: var(--ink-muted);">pts</span></div>
           </div>
           <div class="solo-breakdown-pills">
-            <span class="solo-pill">Terraces: <strong>${s.terrace}</strong></span>
-            <span class="solo-pill">Piers: <strong>${s.pier}</strong></span>
-            <span class="solo-pill">Landmarks: <strong>${s.landmark}</strong></span>
-            <span class="solo-pill">Residents: <strong>${s.resident}</strong></span>
-            ${state.includeDistinctions ? `<span class="solo-pill">Distinctions: <strong>${s.distinction}</strong></span>` : ''}
+            <span class="solo-pill">Streets (${solo.streets.length}): <strong>${streetsScore}</strong></span>
+            <span class="solo-pill">Residents: <strong>${solo.resident.score}</strong></span>
+            ${state.includeDistinctions ? `<span class="solo-pill">Distinctions: <strong>${solo.distinction.score}</strong></span>` : ''}
           </div>
         </div>
       `;
@@ -377,8 +395,8 @@
         const runnerUp = ranked[1];
         let tieNote = '';
         if (runnerUp && runnerUp.total === w.total) {
-          if (w.streets !== runnerUp.streets) {
-            tieNote = ` — won on completed streets (${w.streets} vs ${runnerUp.streets})`;
+          if (w.completedStreets !== runnerUp.completedStreets) {
+            tieNote = ` — won on completed streets (${w.completedStreets} vs ${runnerUp.completedStreets})`;
           } else if (w.resident !== runnerUp.resident) {
             tieNote = ` — won on Resident pts (${w.resident} vs ${runnerUp.resident})`;
           }
@@ -391,7 +409,6 @@
       .map((entry) => {
         const p = entry.player;
         const color = PAWN_COLORS[p.colorIndex].hex;
-        const s = p.scores;
         const isFirst = hasAnyPoints && entry.rank === 1;
         return `
           <div class="standing-row ${isFirst ? 'rank-1' : ''}">
@@ -402,12 +419,10 @@
                 <span class="standing-name">${escapeHtml(p.name)}</span>
               </div>
               <div class="standing-breakdown">
-                <span>Terraces ${s.terrace}</span>
-                <span>Piers ${s.pier}</span>
-                <span>Landmarks ${s.landmark}</span>
-                <span>Residents ${s.resident}</span>
-                ${state.includeDistinctions ? `<span>Distinctions ${s.distinction}</span>` : ''}
-                <span>Streets ${entry.streets}</span>
+                <span>Streets ${entry.streetsScore}</span>
+                <span>Residents ${entry.resident}</span>
+                ${state.includeDistinctions ? `<span>Distinctions ${entry.distinction}</span>` : ''}
+                <span>Completed ${entry.completedStreets}</span>
               </div>
             </div>
             <div class="standing-score">${entry.total}</div>
@@ -436,7 +451,6 @@
       if (tabScoreEl) tabScoreEl.textContent = String(total);
     }
 
-    // Update winner highlight on cards without re-rendering inputs
     const ranked = getRankedPlayers();
     const hasAnyPoints = ranked.some((r) => r.total > 0);
     const winnerIds = new Set(
@@ -479,14 +493,15 @@
 
   resetBtn.addEventListener('click', () => {
     const hasScores = getActivePlayers().some(
-      (p) => getPlayerTotal(p) !== 0 || p.completedStreets !== 0
+      (p) => getPlayerTotal(p) !== 0 || p.completedStreets !== 0 || p.streets.length > 3
     );
     if (hasScores && !window.confirm('Clear all scores and start a new game?')) {
       return;
     }
     state.players.forEach((p) => {
-      p.scores = { terrace: 0, pier: 0, landmark: 0, resident: 0, distinction: 0 };
-      p.stepSizes = { terrace: 1, pier: 1, landmark: 1, resident: 1, distinction: 1 };
+      p.streets = createDefaultStreets();
+      p.resident = { score: 0, step: 1 };
+      p.distinction = { score: 0, step: 1 };
       p.completedStreets = 0;
     });
     renderAll();
@@ -513,16 +528,18 @@
     container.appendChild(pop);
   }
 
-  function applyDelta(playerId, category, dir) {
+  function applyDelta(playerId, rowKey, dir) {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return;
+    const entry = getRowEntry(player, rowKey);
+    if (!entry) return;
 
-    const amount = Number(player.stepSizes[category]) || 1;
-    const nextVal = (Number(player.scores[category]) || 0) + amount * dir;
-    player.scores[category] = nextVal;
+    const amount = Number(entry.step) || 1;
+    const nextVal = (Number(entry.score) || 0) + amount * dir;
+    entry.score = nextVal;
 
     const scoreInput = playersGridEl.querySelector(
-      `input[data-player-id="${playerId}"][data-category="${category}"]`
+      `input[data-player-id="${playerId}"][data-row-key="${rowKey}"]`
     );
     if (scoreInput) {
       scoreInput.value = String(nextVal);
@@ -537,8 +554,32 @@
   playersGridEl.addEventListener('click', (e) => {
     const deltaBtn = e.target.closest('button[data-delta-dir]');
     if (deltaBtn) {
-      const { playerId, category, deltaDir } = deltaBtn.dataset;
-      applyDelta(playerId, category, Number(deltaDir));
+      const { playerId, rowKey, deltaDir } = deltaBtn.dataset;
+      applyDelta(playerId, rowKey, Number(deltaDir));
+      return;
+    }
+
+    const addStreetBtn = e.target.closest('button[data-add-street]');
+    if (addStreetBtn) {
+      const playerId = addStreetBtn.dataset.addStreet;
+      const player = state.players.find((p) => p.id === playerId);
+      if (!player) return;
+      player.streets.push({ score: 0, step: 1 });
+      renderPlayerCards();
+      renderStandings();
+      return;
+    }
+
+    const removeStreetBtn = e.target.closest('button[data-remove-street]');
+    if (removeStreetBtn) {
+      const playerId = removeStreetBtn.dataset.playerId;
+      const idx = Number(removeStreetBtn.dataset.removeStreet);
+      const player = state.players.find((p) => p.id === playerId);
+      if (!player || idx < 3 || idx >= player.streets.length) return;
+      player.streets.splice(idx, 1);
+      renderMobileTabs();
+      renderPlayerCards();
+      renderStandings();
       return;
     }
 
@@ -571,12 +612,16 @@
     const deltaRange = e.target.closest('input[data-delta-range]');
     if (deltaRange) {
       const playerId = deltaRange.dataset.deltaRange;
-      const category = deltaRange.dataset.category;
+      const rowKey = deltaRange.dataset.rowKey;
       const player = state.players.find((p) => p.id === playerId);
       if (!player) return;
-      const prevVal = player.stepSizes[category] || 1;
+      const entry = getRowEntry(player, rowKey);
+      if (!entry) return;
+
+      const prevVal = entry.step || 1;
       const val = Math.min(10, Math.max(1, parseInt(deltaRange.value, 10) || 1));
-      player.stepSizes[category] = val;
+      entry.step = val;
+
       const wrap = deltaRange.closest('.delta-slider-wrap');
       if (wrap) {
         wrap.style.setProperty('--pct', String((val - 1) / 9));
@@ -589,13 +634,15 @@
       return;
     }
 
-    const scoreInput = e.target.closest('input[data-category]');
+    const scoreInput = e.target.closest('input[data-row-key]');
     if (scoreInput) {
-      const { playerId, category } = scoreInput.dataset;
+      const { playerId, rowKey } = scoreInput.dataset;
       const player = state.players.find((p) => p.id === playerId);
       if (!player) return;
+      const entry = getRowEntry(player, rowKey);
+      if (!entry) return;
       const parsed = parseInt(scoreInput.value, 10);
-      player.scores[category] = Number.isNaN(parsed) ? 0 : parsed;
+      entry.score = Number.isNaN(parsed) ? 0 : parsed;
       updateLiveTotalsAndStandings(playerId);
       return;
     }

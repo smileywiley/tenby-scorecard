@@ -689,6 +689,47 @@ body {
   color: #FFFFFF;
 }
 
+.add-street-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.48rem 0.75rem;
+  border: 1.5px dashed var(--border-strong);
+  background: var(--bg-sand);
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.add-street-btn:hover {
+  background: var(--bg-sand-alt);
+  color: var(--ink);
+  border-color: var(--ink-subtle);
+}
+
+.remove-street-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-subtle);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 0.2rem;
+}
+
+.remove-street-btn:hover {
+  background: #FDF3F1;
+  color: #B44332;
+}
+
 /* Tiebreaker row */
 .tiebreaker-box {
   margin-top: 0.2rem;
