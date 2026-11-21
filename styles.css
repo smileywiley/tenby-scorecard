@@ -574,6 +574,8 @@ body {
   border: 1.5px solid var(--border);
   border-radius: 7px;
   padding: 0.28rem 0.4rem;
+  cursor: ew-resize;
+  touch-action: pan-y;
   transition: all 0.15s ease;
 }
 
@@ -586,6 +588,14 @@ body {
   outline: none;
   border-color: var(--pawn-blue);
   box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
+  cursor: text;
+}
+
+.delta-input.scrubbing {
+  background: #EDF5FC;
+  border-color: var(--pawn-blue);
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.22);
+  user-select: none;
 }
 
 /* Tiebreaker row */

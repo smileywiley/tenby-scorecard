@@ -585,7 +585,77 @@
     }
   });
 
+  // Horizontal finger/mouse scrubbing on .delta-input
+  let scrubState = null;
+
+  playersGridEl.addEventListener('pointerdown', (e) => {
+    const deltaInput = e.target.closest('input[data-delta-input]');
+    if (!deltaInput) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    scrubState = {
+      input: deltaInput,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startVal: Math.max(0, parseInt(deltaInput.value, 10) || 0),
+      active: false,
+    };
+  });
+
+  playersGridEl.addEventListener('pointermove', (e) => {
+    if (!scrubState || e.pointerId !== scrubState.pointerId) return;
+    const dx = e.clientX - scrubState.startX;
+
+    if (!scrubState.active) {
+      if (Math.abs(dx) < 7) return;
+      scrubState.active = true;
+      scrubState.input.classList.add('scrubbing');
+      try {
+        scrubState.input.setPointerCapture(e.pointerId);
+      } catch (_) {
+        // Ignore if capture is unavailable
+      }
+      if (document.activeElement === scrubState.input) {
+        scrubState.input.blur();
+      }
+    }
+
+    const steps = Math.round(dx / 18);
+    const nextVal = Math.max(0, scrubState.startVal + steps);
+    scrubState.input.value = String(nextVal);
+  });
+
+  function endScrub(e) {
+    if (!scrubState || e.pointerId !== scrubState.pointerId) return;
+    const wasActive = scrubState.active;
+    const input = scrubState.input;
+    input.classList.remove('scrubbing');
+    try {
+      if (input.hasPointerCapture(e.pointerId)) {
+        input.releasePointerCapture(e.pointerId);
+      }
+    } catch (_) {
+      // Ignore
+    }
+    scrubState = null;
+
+    if (wasActive) {
+      input.dataset.justScrubbed = '1';
+      setTimeout(() => {
+        delete input.dataset.justScrubbed;
+      }, 80);
+      input.blur();
+    }
+  }
+
+  playersGridEl.addEventListener('pointerup', endScrub);
+  playersGridEl.addEventListener('pointercancel', endScrub);
+
   playersGridEl.addEventListener('focusin', (e) => {
+    if (e.target.matches('input[data-delta-input]') && e.target.dataset.justScrubbed) {
+      e.target.blur();
+      return;
+    }
     if (e.target.matches('input[type="number"]')) {
       e.target.select();
     }
