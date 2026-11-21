@@ -588,15 +588,6 @@ body {
   box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
 }
 
-.delta-input::-webkit-outer-spin-button,
-.delta-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.delta-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
 /* Tiebreaker row */
 .tiebreaker-box {
   margin-top: 0.2rem;

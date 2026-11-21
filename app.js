@@ -233,8 +233,8 @@
                     class="delta-input"
                     data-delta-input="${player.id}"
                     data-category="${cat.key}"
-                    placeholder="+ / − pts (default 1)"
-                    aria-label="Points to add or subtract for ${escapeHtml(player.name)} ${cat.label}"
+                    value="1"
+                    aria-label="Points per tap for ${escapeHtml(player.name)} ${cat.label}"
                   />
                   <button type="button" class="delta-btn delta-plus" data-delta-dir="1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Add to ${cat.label}">+</button>
                 </div>
@@ -499,7 +499,6 @@
       `input[data-player-id="${playerId}"][data-category="${category}"]`
     );
     if (scoreInput) scoreInput.value = String(nextVal);
-    if (deltaInput && raw !== '') deltaInput.value = '';
 
     updateLiveTotalsAndStandings(playerId);
   }
