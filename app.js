@@ -224,11 +224,19 @@
                     aria-label="${escapeHtml(player.name)} ${cat.label}"
                   />
                 </div>
-                <div class="stepper-chips">
-                  <button type="button" class="chip-btn chip-minus" data-step="-1" data-player-id="${player.id}" data-category="${cat.key}">&minus;1</button>
-                  <button type="button" class="chip-btn" data-step="1" data-player-id="${player.id}" data-category="${cat.key}">+1</button>
-                  <button type="button" class="chip-btn" data-step="2" data-player-id="${player.id}" data-category="${cat.key}">+2</button>
-                  <button type="button" class="chip-btn" data-step="5" data-player-id="${player.id}" data-category="${cat.key}">+5</button>
+                <div class="delta-adder">
+                  <button type="button" class="delta-btn delta-minus" data-delta-dir="-1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Subtract from ${cat.label}">&minus;</button>
+                  <input
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    class="delta-input"
+                    data-delta-input="${player.id}"
+                    data-category="${cat.key}"
+                    placeholder="+ / − pts (default 1)"
+                    aria-label="Points to add or subtract for ${escapeHtml(player.name)} ${cat.label}"
+                  />
+                  <button type="button" class="delta-btn delta-plus" data-delta-dir="1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Add to ${cat.label}">+</button>
                 </div>
               </div>
             `;
@@ -473,19 +481,34 @@
     renderPlayerCards();
   });
 
+  function applyDelta(playerId, category, dir) {
+    const player = state.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const deltaInput = playersGridEl.querySelector(
+      `input[data-delta-input="${playerId}"][data-category="${category}"]`
+    );
+    const raw = deltaInput ? deltaInput.value.trim() : '';
+    const amount = raw === '' ? 1 : parseInt(raw, 10);
+    if (Number.isNaN(amount)) return;
+
+    const nextVal = (Number(player.scores[category]) || 0) + amount * dir;
+    player.scores[category] = nextVal;
+
+    const scoreInput = playersGridEl.querySelector(
+      `input[data-player-id="${playerId}"][data-category="${category}"]`
+    );
+    if (scoreInput) scoreInput.value = String(nextVal);
+    if (deltaInput && raw !== '') deltaInput.value = '';
+
+    updateLiveTotalsAndStandings(playerId);
+  }
+
   playersGridEl.addEventListener('click', (e) => {
-    const stepBtn = e.target.closest('button[data-step]');
-    if (stepBtn) {
-      const { playerId, category, step } = stepBtn.dataset;
-      const player = state.players.find((p) => p.id === playerId);
-      if (!player) return;
-      const nextVal = (Number(player.scores[category]) || 0) + Number(step);
-      player.scores[category] = nextVal;
-      const input = playersGridEl.querySelector(
-        `input[data-player-id="${playerId}"][data-category="${category}"]`
-      );
-      if (input) input.value = String(nextVal);
-      updateLiveTotalsAndStandings(playerId);
+    const deltaBtn = e.target.closest('button[data-delta-dir]');
+    if (deltaBtn) {
+      const { playerId, category, deltaDir } = deltaBtn.dataset;
+      applyDelta(playerId, category, Number(deltaDir));
       return;
     }
 
@@ -550,6 +573,16 @@
         tabNameEl.textContent = nameInput.value || `Player ${idx + 1}`;
       }
       renderStandings();
+    }
+  });
+
+  playersGridEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const deltaInput = e.target.closest('input[data-delta-input]');
+      if (deltaInput) {
+        e.preventDefault();
+        applyDelta(deltaInput.dataset.deltaInput, deltaInput.dataset.category, 1);
+      }
     }
   });
 

@@ -507,46 +507,94 @@ body {
   -moz-appearance: textfield;
 }
 
-/* Stepper Chips */
-.stepper-chips {
+/* Delta Adder Bar */
+.delta-adder {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 44px 1fr 44px;
   gap: 0.35rem;
+  align-items: stretch;
 }
 
-.chip-btn {
+.delta-btn {
   border: 1px solid var(--border);
   background: var(--surface-tint);
   color: var(--ink);
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 0.34rem 0.25rem;
   border-radius: 7px;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0.28rem 0;
   transition: all 0.1s ease;
   user-select: none;
   touch-action: manipulation;
 }
 
-.chip-btn:hover {
+.delta-btn:hover {
   background: var(--bg-sand-alt);
   border-color: var(--border-strong);
 }
 
-.chip-btn:active {
+.delta-btn:active {
   transform: scale(0.96);
 }
 
-.chip-btn.chip-minus {
+.delta-btn.delta-minus {
   color: #B44332;
   background: #FDF3F1;
   border-color: #F3D5CF;
 }
 
-.chip-btn.chip-minus:hover {
+.delta-btn.delta-minus:hover {
   background: #FADFD9;
+}
+
+.delta-btn.delta-plus {
+  color: #1A5950;
+  background: #E8F5F3;
+  border-color: #9ED6CD;
+}
+
+.delta-btn.delta-plus:hover {
+  background: #D4ECE8;
+}
+
+.delta-input {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 0.28rem 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.delta-input::placeholder {
+  color: var(--ink-subtle);
+  font-weight: 500;
+}
+
+.delta-input:focus {
+  outline: none;
+  border-color: var(--pawn-blue);
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
+}
+
+.delta-input::-webkit-outer-spin-button,
+.delta-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.delta-input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 /* Tiebreaker row */
