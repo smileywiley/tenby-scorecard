@@ -60,6 +60,13 @@
         resident: 0,
         distinction: 0,
       },
+      stepSizes: {
+        terrace: 1,
+        pier: 1,
+        landmark: 1,
+        resident: 1,
+        distinction: 1,
+      },
       completedStreets: 0,
     };
   }
@@ -204,6 +211,8 @@
         const rowsHtml = visibleCategories
           .map((cat) => {
             const val = player.scores[cat.key];
+            const stepVal = player.stepSizes[cat.key] || 1;
+            const pct = (stepVal - 1) / 9;
             return `
               <div class="score-row">
                 <div class="score-row-top">
@@ -226,16 +235,23 @@
                 </div>
                 <div class="delta-adder">
                   <button type="button" class="delta-btn delta-minus" data-delta-dir="-1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Subtract from ${cat.label}">&minus;</button>
-                  <input
-                    type="number"
-                    inputmode="numeric"
-                    min="0"
-                    class="delta-input"
-                    data-delta-input="${player.id}"
-                    data-category="${cat.key}"
-                    value="1"
-                    aria-label="Points per tap for ${escapeHtml(player.name)} ${cat.label}"
-                  />
+                  <div class="delta-slider-wrap" style="--pct: ${pct}">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      step="1"
+                      class="delta-range"
+                      data-delta-range="${player.id}"
+                      data-category="${cat.key}"
+                      value="${stepVal}"
+                      aria-label="Points per tap for ${escapeHtml(player.name)} ${cat.label}"
+                    />
+                    <div class="delta-track" aria-hidden="true">
+                      <div class="delta-fill"></div>
+                      <span class="delta-thumb">${stepVal}</span>
+                    </div>
+                  </div>
                   <button type="button" class="delta-btn delta-plus" data-delta-dir="1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Add to ${cat.label}">+</button>
                 </div>
               </div>
@@ -468,6 +484,7 @@
     }
     state.players.forEach((p) => {
       p.scores = { terrace: 0, pier: 0, landmark: 0, resident: 0, distinction: 0 };
+      p.stepSizes = { terrace: 1, pier: 1, landmark: 1, resident: 1, distinction: 1 };
       p.completedStreets = 0;
     });
     renderAll();
@@ -485,13 +502,7 @@
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return;
 
-    const deltaInput = playersGridEl.querySelector(
-      `input[data-delta-input="${playerId}"][data-category="${category}"]`
-    );
-    const raw = deltaInput ? deltaInput.value.trim() : '';
-    const amount = raw === '' ? 1 : parseInt(raw, 10);
-    if (Number.isNaN(amount)) return;
-
+    const amount = Number(player.stepSizes[category]) || 1;
     const nextVal = (Number(player.scores[category]) || 0) + amount * dir;
     player.scores[category] = nextVal;
 
@@ -537,6 +548,23 @@
   });
 
   playersGridEl.addEventListener('input', (e) => {
+    const deltaRange = e.target.closest('input[data-delta-range]');
+    if (deltaRange) {
+      const playerId = deltaRange.dataset.deltaRange;
+      const category = deltaRange.dataset.category;
+      const player = state.players.find((p) => p.id === playerId);
+      if (!player) return;
+      const val = Math.min(10, Math.max(1, parseInt(deltaRange.value, 10) || 1));
+      player.stepSizes[category] = val;
+      const wrap = deltaRange.closest('.delta-slider-wrap');
+      if (wrap) {
+        wrap.style.setProperty('--pct', String((val - 1) / 9));
+        const thumb = wrap.querySelector('.delta-thumb');
+        if (thumb) thumb.textContent = String(val);
+      }
+      return;
+    }
+
     const scoreInput = e.target.closest('input[data-category]');
     if (scoreInput) {
       const { playerId, category } = scoreInput.dataset;
@@ -575,87 +603,7 @@
     }
   });
 
-  playersGridEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const deltaInput = e.target.closest('input[data-delta-input]');
-      if (deltaInput) {
-        e.preventDefault();
-        applyDelta(deltaInput.dataset.deltaInput, deltaInput.dataset.category, 1);
-      }
-    }
-  });
-
-  // Horizontal finger/mouse scrubbing on .delta-input
-  let scrubState = null;
-
-  playersGridEl.addEventListener('pointerdown', (e) => {
-    const deltaInput = e.target.closest('input[data-delta-input]');
-    if (!deltaInput) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-    scrubState = {
-      input: deltaInput,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startVal: Math.max(0, parseInt(deltaInput.value, 10) || 0),
-      active: false,
-    };
-  });
-
-  playersGridEl.addEventListener('pointermove', (e) => {
-    if (!scrubState || e.pointerId !== scrubState.pointerId) return;
-    const dx = e.clientX - scrubState.startX;
-
-    if (!scrubState.active) {
-      if (Math.abs(dx) < 7) return;
-      scrubState.active = true;
-      scrubState.input.classList.add('scrubbing');
-      try {
-        scrubState.input.setPointerCapture(e.pointerId);
-      } catch (_) {
-        // Ignore if capture is unavailable
-      }
-      if (document.activeElement === scrubState.input) {
-        scrubState.input.blur();
-      }
-    }
-
-    const steps = Math.round(dx / 18);
-    const nextVal = Math.max(0, scrubState.startVal + steps);
-    scrubState.input.value = String(nextVal);
-  });
-
-  function endScrub(e) {
-    if (!scrubState || e.pointerId !== scrubState.pointerId) return;
-    const wasActive = scrubState.active;
-    const input = scrubState.input;
-    input.classList.remove('scrubbing');
-    try {
-      if (input.hasPointerCapture(e.pointerId)) {
-        input.releasePointerCapture(e.pointerId);
-      }
-    } catch (_) {
-      // Ignore
-    }
-    scrubState = null;
-
-    if (wasActive) {
-      input.dataset.justScrubbed = '1';
-      setTimeout(() => {
-        delete input.dataset.justScrubbed;
-      }, 80);
-      input.blur();
-    }
-  }
-
-  playersGridEl.addEventListener('pointerup', endScrub);
-  playersGridEl.addEventListener('pointercancel', endScrub);
-
   playersGridEl.addEventListener('focusin', (e) => {
-    if (e.target.matches('input[data-delta-input]') && e.target.dataset.justScrubbed) {
-      e.target.blur();
-      return;
-    }
     if (e.target.matches('input[type="number"]')) {
       e.target.select();
     }
