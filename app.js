@@ -223,15 +223,17 @@
                       <span class="category-hint">${cat.hint}</span>
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    inputmode="numeric"
-                    class="score-input"
-                    data-player-id="${player.id}"
-                    data-category="${cat.key}"
-                    value="${val}"
-                    aria-label="${escapeHtml(player.name)} ${cat.label}"
-                  />
+                  <div class="score-input-wrap">
+                    <input
+                      type="number"
+                      inputmode="numeric"
+                      class="score-input"
+                      data-player-id="${player.id}"
+                      data-category="${cat.key}"
+                      value="${val}"
+                      aria-label="${escapeHtml(player.name)} ${cat.label}"
+                    />
+                  </div>
                 </div>
                 <div class="delta-adder">
                   <button type="button" class="delta-btn delta-minus" data-delta-dir="-1" data-player-id="${player.id}" data-category="${cat.key}" aria-label="Subtract from ${cat.label}">&minus;</button>
@@ -498,6 +500,19 @@
     renderPlayerCards();
   });
 
+  function spawnFloatPop(container, text, variantClass, replaceExisting) {
+    if (!container) return;
+    if (replaceExisting) {
+      container.querySelectorAll('.float-pop').forEach((el) => el.remove());
+    }
+    const pop = document.createElement('span');
+    pop.className = `float-pop ${variantClass}`;
+    pop.textContent = text;
+    pop.setAttribute('aria-hidden', 'true');
+    pop.addEventListener('animationend', () => pop.remove(), { once: true });
+    container.appendChild(pop);
+  }
+
   function applyDelta(playerId, category, dir) {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return;
@@ -509,7 +524,12 @@
     const scoreInput = playersGridEl.querySelector(
       `input[data-player-id="${playerId}"][data-category="${category}"]`
     );
-    if (scoreInput) scoreInput.value = String(nextVal);
+    if (scoreInput) {
+      scoreInput.value = String(nextVal);
+      const label = dir > 0 ? `+${amount}` : `−${amount}`;
+      const variant = dir > 0 ? 'float-pop--plus' : 'float-pop--minus';
+      spawnFloatPop(scoreInput.closest('.score-input-wrap'), label, variant, false);
+    }
 
     updateLiveTotalsAndStandings(playerId);
   }
@@ -554,6 +574,7 @@
       const category = deltaRange.dataset.category;
       const player = state.players.find((p) => p.id === playerId);
       if (!player) return;
+      const prevVal = player.stepSizes[category] || 1;
       const val = Math.min(10, Math.max(1, parseInt(deltaRange.value, 10) || 1));
       player.stepSizes[category] = val;
       const wrap = deltaRange.closest('.delta-slider-wrap');
@@ -561,6 +582,9 @@
         wrap.style.setProperty('--pct', String((val - 1) / 9));
         const thumb = wrap.querySelector('.delta-thumb');
         if (thumb) thumb.textContent = String(val);
+        if (val !== prevVal) {
+          spawnFloatPop(wrap.querySelector('.delta-track'), String(val), 'float-pop--slider', true);
+        }
       }
       return;
     }

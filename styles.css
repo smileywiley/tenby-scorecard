@@ -629,6 +629,66 @@ body {
   background: var(--pawn-blue);
 }
 
+.score-input-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+@keyframes marioFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.75);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.14);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(-50%, -22px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -34px) scale(0.95);
+  }
+}
+
+.float-pop {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  pointer-events: none;
+  z-index: 25;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(26, 46, 59, 0.22);
+  animation: marioFloat 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.float-pop--slider {
+  top: -28px;
+  left: calc(var(--pct, 0) * 100%);
+  background: var(--ink);
+  color: #FFFFFF;
+}
+
+.float-pop--plus {
+  background: #1A5950;
+  color: #FFFFFF;
+}
+
+.float-pop--minus {
+  background: #B44332;
+  color: #FFFFFF;
+}
+
 /* Tiebreaker row */
 .tiebreaker-box {
   margin-top: 0.2rem;
