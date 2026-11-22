@@ -451,10 +451,10 @@ body {
   flex-shrink: 0;
 }
 
-.cat-terrace { background: #FDECE8; color: #C8523B; }
+.cat-terrace { background: #2E8B57; color: #FFFFFF; }
 .cat-pier { background: #E7F2FB; color: #2D6FA8; }
 .cat-landmark { background: #FEF6E0; color: #B57F14; }
-.cat-resident { background: #E8F5F3; color: #267B6F; }
+.cat-resident { background: #FCE4F0; color: #C21875; }
 .cat-distinction { background: #F1EEF9; color: #6757A3; }
 .cat-streets { background: #F0ECE3; color: #566B7A; }
 
