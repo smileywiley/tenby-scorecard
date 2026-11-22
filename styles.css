@@ -672,11 +672,31 @@ body {
   animation: marioFloat 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@keyframes marioFloatSlider {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -150%) scale(1.14);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(-50%, -210%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -250%) scale(0.95);
+  }
+}
+
 .float-pop--slider {
-  top: -28px;
+  top: 50%;
   left: calc(var(--pct, 0) * 100%);
   background: var(--ink);
   color: #FFFFFF;
+  animation-name: marioFloatSlider;
 }
 
 .float-pop--plus {
